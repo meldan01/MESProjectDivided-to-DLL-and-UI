@@ -115,12 +115,20 @@ namespace UIForNewMesSystem
         /// <summary>
         /// CheckMachineFields - check that the properties of machine 
         /// are properly filled before sending to DB
+        /// built in a way that one validation will end the function and save time.
         /// </summary>
         /// <returns></returns>
         private bool areAllMachineFieldsValid()
         {
-            return machineNameValidation(txtMachineName.Text) & machineCreatorIdValidation(txtCreatorID.Text) &
-                 machineLanguageCodeValidation(txtLanguageCode.Text) & machineDpValidation(dpDateOfCreation.SelectedDate);
+            if (!machineNameValidation(txtMachineName.Text))
+                return false;
+            if (!machineCreatorIdValidation(txtCreatorID.Text))
+                return false;
+            if (!machineLanguageCodeValidation(txtLanguageCode.Text))
+                return false;
+            if (!machineDpValidation(dpDateOfCreation.SelectedDate))
+                return false;
+            return true; ;
         }
 
         /// <summary>
@@ -269,7 +277,7 @@ namespace UIForNewMesSystem
                 setMachineUIMessage("Please type machine name to delete", Brushes.Red, Visibility.Visible);
                 return false;
             }
-            if (!DBConnectionManager.machineExists(txtMachineName.Text))
+            if (!Machine.machineExists(txtMachineName.Text))
             {
                 setMachineUIMessage($"Could not find machine {txtMachineName.Text} in the Database", Brushes.Red, Visibility.Visible);
                 m_logsInstance.Log($"Debug - machine {txtMachineName.Text} not found, therefore it will not be deleted");
@@ -452,12 +460,22 @@ namespace UIForNewMesSystem
 
         /// <summary>
         /// areAllPartFieldsValid - Validates fields in the UI are properly filled
+        /// built in a way that one validation will end the function and save time.
         /// </summary>
         /// <returns></returns>
         private bool areAllPartFieldsValid()
         {
-            return partCatalogIdValidation(txtCatalogID.Text) & partDescriptionValidation(txtItemDescription.Text) &
-                partDpValidation(dpPartDateOfCreation.SelectedDate) & partCreatorIdValidation(txtPartCreatorID.Text) & partLanguageCodeValidation(txtPartLanguageCode.Text);
+            if (!partCatalogIdValidation(txtCatalogID.Text))
+                return false;
+            if (!partDescriptionValidation(txtItemDescription.Text))
+                return false;
+            if (!partDpValidation(dpPartDateOfCreation.SelectedDate))
+                return false;
+            if (!partCreatorIdValidation(txtPartCreatorID.Text))
+                return false;
+            if (!partLanguageCodeValidation(txtPartLanguageCode.Text))
+                return false;
+            return true;
         }
 
         /// <summary>
@@ -582,7 +600,7 @@ namespace UIForNewMesSystem
             txtWorkOrderSaveWarning.Visibility = Visibility.Collapsed;
             if (areAllWorkOrderFieldsValid())
             {
-                if (!DBConnectionManager.orderNumberExists(txtOrderNumber.Text))
+                if (!WorkOrder.orderExists(txtOrderNumber.Text))
                 {
                     if (!validateMachinePartOrder())
                     {
@@ -641,19 +659,32 @@ namespace UIForNewMesSystem
         /// <returns></returns>
         private bool checkCatalogIdAndMachineNameExist(string machineName, string catalogID)
         {
-            return DBConnectionManager.machineExists(machineName) & DBConnectionManager.catalogIDExists(catalogID);
+            return Machine.machineExists(machineName) & Part.partExists(catalogID);
         }
 
         /// <summary>
         /// The next function returns true if all the fields in work order section
         /// filled properly, otherwise false
+        /// built in a way that one validation will end the function and save time.
         /// </summary>
         /// <returns></returns>
         private bool areAllWorkOrderFieldsValid()
         {
-            return orderNumberValidation(txtOrderNumber.Text) & catalogIDValidation(txtWorkOrderCatalogID.Text) & machineNameOrderValidation(textMachineName.Text) &
-                   amountToProduceValidation(txtAmountToProduce.Text) & dpWorkOrderValidation(dpDateOfCreationWorkOrder.SelectedDate) & creatorIDWorkOrderValidation(txtOrderIDCreatorID.Text) &
-                   languageCodeWorkOrderValidation(txtWorkOrderLanguageCode.Text);
+            if (!orderNumberValidation(txtOrderNumber.Text))
+                return false;
+            if (!catalogIDValidation(txtWorkOrderCatalogID.Text))
+                return false;
+            if (!machineNameOrderValidation(textMachineName.Text))
+                return false;
+            if (!amountToProduceValidation(txtAmountToProduce.Text))
+                return false;
+            if (!dpWorkOrderValidation(dpDateOfCreationWorkOrder.SelectedDate))
+                return false; 
+            if (!creatorIDWorkOrderValidation(txtOrderIDCreatorID.Text))
+                return false;
+            if (!languageCodeWorkOrderValidation(txtWorkOrderLanguageCode.Text))
+                return false;
+            return true;
         }
 
         /// <summary>
@@ -664,7 +695,10 @@ namespace UIForNewMesSystem
         {
             if (string.IsNullOrEmpty(orderNumber) ||
                 (!orderNumber.All(char.IsDigit)))
+            {
                 return false;
+            }
+                
             else
                 return true;
         }
