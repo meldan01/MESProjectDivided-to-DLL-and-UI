@@ -85,7 +85,7 @@
                     <TextBox Name="txtWorkOrderCatalogID" Margin="10,0,10,5" />
                     <Label Content="Machine Name:" Foreground="White" />
                     <TextBox Name="textMachineName" Margin="10,0,10,5" />
-                    <Label Content="Amount to Produce:" Foreground="White" />
+                    <Label Content="Quantity:" Foreground="White" />
                     <TextBox Name="txtAmountToProduce" Margin="10,0,10,5" />
                     <Label Content="Date of Creation:" Foreground="White" />
                     <DatePicker Name="dpDateOfCreationWorkOrder" Margin="10,0,10,5" />

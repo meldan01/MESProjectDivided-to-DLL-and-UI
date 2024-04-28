@@ -46,10 +46,47 @@ namespace UIForNewMesSystem
             m_dbConnection = DBConnectionManager.getInstance();
         }
 
-        /// <summary>
-        /// isUpdatedSetter - A flag setter funcion 
-        /// </summary>
-        /// <param name="isSuccessfulUpdate"></param>
+
+        public static bool validateCreationDate(DateTime? creationDate)
+        {
+            if (creationDate == null || !creationDate.HasValue)
+                return false;
+            return true;
+        }
+
+
+        private bool validateLanguageCode(string languageCode)
+        {
+            if (string.IsNullOrEmpty(languageCode) ||
+                (!languageCode.All(char.IsDigit)))
+                return false;
+            else
+                return true;
+        }
+
+        private bool validateUpdateLanguageCode(string languageCode)
+        {
+            if (!string.IsNullOrEmpty(languageCode) && !languageCode.All(char.IsDigit))
+                return false;
+            return true;
+        }
+
+        public static bool validateCreatorID(string creatorID)
+        {
+            if (string.IsNullOrEmpty(creatorID) || (creatorID.Length != 9) || !creatorID.All(char.IsDigit) || !idCheck(creatorID))
+                return false;
+            else
+                return true;
+        }
+
+        public static bool validateUpdateCreator(string creatorID)
+        {
+            if (!string.IsNullOrEmpty(creatorID) && (creatorID.Length != 9 || !creatorID.All(char.IsDigit) || !idCheck(creatorID)))
+                return false;
+            return true;
+        }
+
+
         #endregion General
 
         #region Machine
@@ -64,71 +101,14 @@ namespace UIForNewMesSystem
                 }
                 else
                 {
-                    displayWorkMachineMessage("Machine name already exist.", Brushes.Red, Visibility.Visible);
+                    displayMachineMessage("Machine name already exist.", Brushes.Red, Visibility.Visible);
                 }
             }
             else
             {
-                displayWorkMachineMessage("Invalid input detected. Please ensure all fields" +
+                displayMachineMessage("Invalid input detected. Please ensure all fields" +
                     " are filled correctly to proceed.", Brushes.Red, Visibility.Visible);
             }
-        }
-
-        /// <summary>
-        /// setMachineMessage - Indicates user about state of the system
-        /// </summary>
-        /// <param name="message"></param>
-        /// <param name="foreground"></param>
-        /// <param name="visibility"></param>
-        private void displayWorkMachineMessage(string message, Brush foreground, Visibility visibility)
-        {
-            txtMachineSaveWarning.Text = message;
-            txtMachineSaveWarning.Foreground = foreground;
-            txtMachineSaveWarning.Visibility = visibility;
-        }
-
-        /// <summary>
-        /// startSuccessfulMachineProtocol - Method that run after all check are done when sabe btn pressed
-        /// </summary>
-        private void postMachineToDatabase()
-        {
-            WorkEntities.Machine newMachine = new WorkEntities.Machine(dpDateOfCreation.SelectedDate.Value, txtCreatorID.Text, txtLanguageCode.Text, txtMachineName.Text);
-            newMachine.insertMachineIntoDB();
-            logAndNotifyUser();
-        }
-
-        private void logAndNotifyUser()
-        {
-            if (m_machineSent)
-            {
-                m_machineSent = false;
-                m_logsInstance.Log("Debug" + $" Machine number {txtMachineName.Text} successfully sent to the DB");
-                displayWorkMachineMessage($"Machine {txtMachineName.Text} successfully sent to DB", Brushes.LightGreen, Visibility.Visible);
-            }
-            else
-            {
-                m_logsInstance.Log("Error" + $" - Machine {txtMachineName.Text} Could not be created due to unknown Error in the constructor");
-                displayWorkMachineMessage($"Machine {txtMachineName.Text} could not be added to the DB", Brushes.Red, Visibility.Visible);
-            }
-        }
-
-        /// <summary>
-        /// CheckMachineFields - check that the properties of machine 
-        /// are properly filled before sending to DB
-        /// built in a way that one validation will end the function and save time.
-        /// </summary>
-        /// <returns></returns>
-        private bool validateMachineFields()
-        {
-            if (!validateMachineName(txtMachineName.Text))
-                return false;
-            if (!validateMachineCreatorId(txtCreatorID.Text))
-                return false;
-            if (!validateMachineLanguageCode(txtLanguageCode.Text))
-                return false;
-            if (!machineDpValidation(dpDateOfCreation.SelectedDate))
-                return false;
-            return true; ;
         }
 
         /// <summary>
@@ -141,7 +121,7 @@ namespace UIForNewMesSystem
         {
             txtMachineSaveWarning.Visibility = Visibility.Collapsed;
             txtMachineMessage.Text = WorkEntities.Machine.fetchMachinesInfo();
-            displayWorkMachineMessage("Information updated", Brushes.LightGreen, Visibility.Visible);
+            displayMachineMessage("Information updated", Brushes.LightGreen, Visibility.Visible);
         }
 
         /// <summary>
@@ -155,47 +135,158 @@ namespace UIForNewMesSystem
                 return;
             if (MachineEntity.updateMachine(txtMachineName.Text, dpDateOfCreation.SelectedDate, txtCreatorID.Text, txtLanguageCode.Text))
             {
-                displayWorkMachineMessage($"Machine {txtMachineName.Text} successfully updated", Brushes.LightGreen, Visibility.Visible);
+                displayMachineMessage($"Machine {txtMachineName.Text} successfully updated", Brushes.LightGreen, Visibility.Visible);
             }
             else
             {
-                displayWorkMachineMessage($"Could not update machine {txtMachineName.Text}", Brushes.Red, Visibility.Visible);
+                displayMachineMessage($"Could not update machine {txtMachineName.Text}", Brushes.Red, Visibility.Visible);
             }
+        }
+
+        /// <summary>
+        /// deleteMachine_Click - deletes the current machine.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void deleteMachine_Click(object sender, RoutedEventArgs e)
+        {
+            if (!userDeleteValidation())
+                return;
+            if (MachineEntity.deleteMachine(txtMachineName.Text))
+            {
+                displayMachineMessage($"Machine {txtMachineName.Text} deleted successfully", Brushes.LightGreen, Visibility.Visible);
+                m_logsInstance.Log($"Debug - Machine {txtMachineName.Text} deleted successfully.");
+                deleteMachineWorkOrders(txtMachineName.Text);
+                return;
+            }
+            else
+            {
+                displayMachineMessage($"Could not delete machine {txtMachineName.Text} from the Database", Brushes.Red, Visibility.Visible);
+                m_logsInstance.Log($"Error - machine {txtMachineName.Text} not deleted.");
+                return;
+            }
+        }
+
+
+        /// <summary>
+        /// setMachineMessage - Indicates user about state of the system
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="foreground"></param>
+        /// <param name="visibility"></param>
+        private void displayMachineMessage(string message, Brush foreground, Visibility visibility)
+        {
+            txtMachineSaveWarning.Text = message;
+            txtMachineSaveWarning.Foreground = foreground;
+            txtMachineSaveWarning.Visibility = visibility;
+        }
+
+        /// <summary>
+        /// startSuccessfulMachineProtocol - Method that run after all check are done when sabe btn pressed
+        /// </summary>
+        private void postMachineToDatabase()
+        {
+            WorkEntities.Machine newMachine = new WorkEntities.Machine(dpDateOfCreation.SelectedDate.Value, txtCreatorID.Text, txtLanguageCode.Text, txtMachineName.Text);
+            m_machineSent = newMachine.insertMachineIntoDB();
+            logAndNotifyUser();
+        }
+
+        public static bool idCheck(string IDNumber)
+        {
+            int alter = 1;
+            int total = 0;
+            int temp = 0;
+            char[] digit = new char[2];
+            try
+            {
+                for (int i = 0; i < 9; i++)
+                {
+                    digit[0] = IDNumber[i];
+                    temp = alter * int.Parse(new string(digit));
+                    if (temp >= 10)
+                        temp = temp - 9;
+                    total = total + temp;
+                    alter = (alter == 1) ? 2 : 1;
+                }
+            }
+            catch(Exception ex)
+            {
+                m_logsInstance.Log(($"the id : {IDNumber} checked and found to be false"));
+                m_logsInstance.Log("EXCEPTION" + ex.Message);
+            }
+            return total % 10 == 0;
+        }
+
+        private void logAndNotifyUser()
+        {
+            if (m_machineSent)
+            {
+                m_logsInstance.Log("Debug" + $" Machine number {txtMachineName.Text} successfully sent to the DB");
+                displayMachineMessage($"Machine {txtMachineName.Text} successfully sent to DB", Brushes.LightGreen, Visibility.Visible);
+            }
+            else
+            {
+                m_logsInstance.Log("Error" + $" - Machine {txtMachineName.Text} Could not be created due to unknown Error in the constructor");
+                displayMachineMessage($"Machine {txtMachineName.Text} could not be added to the DB", Brushes.Red, Visibility.Visible);
+            }
+        }
+
+        /// <summary>
+        /// CheckMachineFields - check that the properties of machine 
+        /// are properly filled before sending to DB
+        /// built in a way that one validation will end the function and save time.
+        /// </summary>
+        /// <returns></returns>
+        private bool validateMachineFields()
+        {
+            if (!validateMachineName(txtMachineName.Text))
+                return false;
+            if (!validateCreatorID(txtCreatorID.Text))
+            {
+                displayMachineMessage("Creator ID should be a valid ID(9 digits)", Brushes.Red, Visibility.Visible);
+                return false;
+            }
+            else if (!validateLanguageCode(txtLanguageCode.Text))
+            {
+                displayMachineMessage("The language code should only contain digits.", Brushes.Red, Visibility.Visible);
+                return false;
+            }
+            else if (!validateCreationDate(dpDateOfCreation.SelectedDate))
+            {
+                displayMachineMessage("Please enter a creation date", Brushes.Red, Visibility.Visible);
+                return false;
+            }
+            return true; ;
         }
 
         private bool validateBeforeUpdate()
         {
             if (string.IsNullOrEmpty(txtMachineName.Text))
             {
-                displayWorkMachineMessage($"Please type a valid machine name to update", Brushes.Red, Visibility.Visible);
+                displayMachineMessage($"Please type a valid machine name to update", Brushes.Red, Visibility.Visible);
                 return false;
             }
             if (!WorkEntities.Machine.machineExists(txtMachineName.Text))
             {
-                displayWorkMachineMessage($"Machine {txtMachineName.Text} not exist in the Database", Brushes.Red, Visibility.Visible);
+                displayMachineMessage($"Machine {txtMachineName.Text} not exist in the Database", Brushes.Red, Visibility.Visible);
                 return false;
             }
             if (isMachineFieldsEmpty())
             {
-                displayWorkMachineMessage($"Please fill at least on field to update.", Brushes.Red, Visibility.Visible);
+                displayMachineMessage($"Please fill at least on field to update.", Brushes.Red, Visibility.Visible);
                 return false;
             }
-            if (isUpdateMachineFieldsValid(txtCreatorID.Text))
+            if (!validateUpdateCreator(txtCreatorID.Text))
             {
-                displayWorkMachineMessage($"Creator ID should be a valid ID(9 digits)", Brushes.Red, Visibility.Visible);
+                displayMachineMessage($"Creator ID should be a valid ID(9 digits)", Brushes.Red, Visibility.Visible);
+                return false;
+            }
+            if(!validateUpdateLanguageCode(txtLanguageCode.Text))
+            {
+                displayMachineMessage("The language code should only contain digits.", Brushes.Red, Visibility.Visible);
                 return false;
             }
             return true;
-        }
-
-        /// <summary>
-        /// isUpdateMachineFieldsValid - validates the fields of machine before update
-        /// </summary>
-        /// <param name="creatorID"></param>
-        /// <returns></returns>
-        public static bool isUpdateMachineFieldsValid(string creatorID)
-        {
-            return (!string.IsNullOrEmpty(creatorID) && (creatorID.Length != 9 || !creatorID.All(char.IsDigit)));
         }
 
         /// <summary>
@@ -210,45 +301,6 @@ namespace UIForNewMesSystem
                 return true;
         }
 
-        /// <summary>
-        /// machineCreatorIdValidation - validation to the creator ID
-        /// </summary>
-        /// <returns></returns>
-        private bool validateMachineCreatorId(string creatorID)
-        {
-            if (string.IsNullOrEmpty(creatorID) || (creatorID.Length != 9) || !creatorID.All(char.IsDigit))
-                return false;
-            else
-                return true;
-        }
-
-        /// <summary>
-        /// machineLanguageCodeValidation - validation of the language code of machine
-        /// </summary>
-        /// <returns></returns>
-        private bool validateMachineLanguageCode(string languageCode)
-        {
-            if (string.IsNullOrEmpty(languageCode) ||
-                (!languageCode.All(char.IsDigit)))
-                return false;
-            else
-                return true;
-        }
-
-        /// <summary>
-        /// machineDpValidation - validation of the datePicker
-        /// </summary>
-        /// <returns></returns>
-        private bool machineDpValidation(DateTime? creationDate)
-        {
-            if (creationDate == null)
-                return false;
-            if (!creationDate.HasValue)
-                return false;
-            else
-                return true;
-        }
-
         private bool isMachineFieldsEmpty()
         {
             return string.IsNullOrEmpty(txtCreatorID.Text) &
@@ -256,40 +308,16 @@ namespace UIForNewMesSystem
              !dpDateOfCreation.SelectedDate.HasValue;
         }
 
-        /// <summary>
-        /// deleteMachine_Click - deletes the current machine.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void deleteMachine_Click(object sender, RoutedEventArgs e)
-        {
-            if (!userDeleteValidation())
-                return;
-            if (MachineEntity.deleteMachine(txtMachineName.Text))
-            {
-                displayWorkMachineMessage($"Machine {txtMachineName.Text} deleted successfully", Brushes.LightGreen, Visibility.Visible);
-                m_logsInstance.Log($"Debug - Machine {txtMachineName.Text} deleted successfully.");
-                deleteMachineWorkOrders(txtMachineName.Text);
-                return;
-            }
-            else
-            {
-                displayWorkMachineMessage($"Could not delete machine {txtMachineName.Text} from the Database", Brushes.Red, Visibility.Visible);
-                m_logsInstance.Log($"Error - machine {txtMachineName.Text} not deleted.");
-                return;
-            }
-        }
-
         private bool userDeleteValidation()
         {
             if (string.IsNullOrEmpty(txtMachineName.Text))
             {
-                displayWorkMachineMessage("Please type machine name to delete", Brushes.Red, Visibility.Visible);
+                displayMachineMessage("Please type machine name to delete", Brushes.Red, Visibility.Visible);
                 return false;
             }
             if (!Machine.machineExists(txtMachineName.Text))
             {
-                displayWorkMachineMessage($"Could not find machine {txtMachineName.Text} in the Database", Brushes.Red, Visibility.Visible);
+                displayMachineMessage($"Could not find machine {txtMachineName.Text} in the Database", Brushes.Red, Visibility.Visible);
                 m_logsInstance.Log($"Debug - machine {txtMachineName.Text} not found, therefore it will not be deleted");
                 return false;
             }
@@ -352,16 +380,53 @@ namespace UIForNewMesSystem
                 return;
             if (PartEntity.updatePart(txtCatalogID.Text, txtItemDescription.Text, dpPartDateOfCreation.SelectedDate, txtPartCreatorID.Text, txtPartLanguageCode.Text))
                 logAndDisplayPartUpdateSuccess();
-            else
-                logAndDisplayPartUpdateFailure();
         }
 
-        private void logAndDisplayPartUpdateFailure()
+
+        /// <summary>
+        /// getPartsInfo_Click - Gets the Part information from the DB and show it in the textBlock
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void getPartsInfo_Click(object sender, RoutedEventArgs e)
         {
-            displayPartMessage($"Could not update part {txtCatalogID.Text}."
-    , Brushes.Red, Visibility.Visible);
-            m_logsInstance.Log($"Error - Could not update part {txtCatalogID.Text}.");
+            txtPartSaveWarning.Visibility = Visibility.Collapsed;
+            txtPartMessage.Text = PartEntity.fetchPartsInfo();
+            displayPartMessage("Information updated", Brushes.LightGreen, Visibility.Visible);
         }
+
+
+        /// <summary>
+        /// deletePart_Click - Deletes the current part 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void deletePart_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtCatalogID.Text))
+            {
+                displayPartMessage("Please type a valid catalog ID to delete", Brushes.Red, Visibility.Visible);
+                return;
+            }
+            if (PartEntity.partExists(txtCatalogID.Text))
+            {
+                if (PartEntity.deletePart(txtCatalogID.Text))
+                {
+                    displayPartMessage($"Part {txtCatalogID.Text} successfully deleted,", Brushes.LightGreen, Visibility.Visible);
+                    m_logsInstance.Log($"Debug - part {txtCatalogID.Text} successfully deleted");
+                    if (PartEntity.deleteWorkOrdersByCatalogID(txtCatalogID.Text))
+                    {
+                        m_logsInstance.Log($"Debug - deleted all orders related to {txtCatalogID.Text} successfully.");
+                    }
+                }
+            }
+            else
+            {
+                displayPartMessage($"Part {txtCatalogID.Text} not found in the DataBase", Brushes.Red, Visibility.Visible);
+                m_logsInstance.Log($"Debug - Part {txtCatalogID.Text} not found in the DataBase");
+            }
+        }
+
 
         private void logAndDisplayPartUpdateSuccess()
         {
@@ -384,33 +449,31 @@ namespace UIForNewMesSystem
             }
             if (areAllPartFieldsEmpty())
                 return false;
-            if (PartEntity.partExists(txtCatalogID.Text))
+            if (PartEntity.partExists(txtCatalogID.Text)) 
             {
                 if (!descriptionLengthCheck())
+                {
+                    displayPartMessage("Please enter a description with at least 25 characters."
+                    , Brushes.Red, Visibility.Visible);
                     return false;
-                if (!partCreatorUpdateValidation())
+                }
+                if (!validateUpdateCreator(txtPartCreatorID.Text))
+                {
+                    displayPartMessage($"Creator ID should be a valid ID(9 digits)"
+                    , Brushes.Red, Visibility.Visible);
                     return false;
+                }
+                if (!validateUpdateLanguageCode(txtPartLanguageCode.Text))
+                {
+                    displayPartMessage("The language code should only contain digits."
+                    , Brushes.Red, Visibility.Visible);
+                    return false;
+                }
             }
             else
             {
                 displayPartMessage($"Part {txtCatalogID.Text} not exist in the DataBase."
                   , Brushes.Red, Visibility.Visible);
-                return false;
-            }
-            return true;
-        }
-
-        /// <summary>
-        /// partCreatorUpdateValidation - in update creator can be null or empty 
-        /// therefore we check it only if its not empty
-        /// </summary>
-        /// <returns></returns>
-        private bool partCreatorUpdateValidation()
-        {
-            if (!string.IsNullOrEmpty(txtPartCreatorID.Text) && ((txtPartCreatorID.Text.Length != 9) || !txtPartCreatorID.Text.All(char.IsDigit)))
-            {
-                displayPartMessage($"Creator ID should be a valid ID(9 digits)"
-                    , Brushes.Red, Visibility.Visible);
                 return false;
             }
             return true;
@@ -458,6 +521,12 @@ namespace UIForNewMesSystem
                     , Brushes.Red, Visibility.Visible);
                     return false;
                 }
+                if (txtItemDescription.Text.Length > 254)
+                {
+                    displayPartMessage("Please enter a description with Maximum 254 characters."
+                    , Brushes.Red, Visibility.Visible);
+                    return false;
+                }
             }
             return true;
         }
@@ -494,15 +563,26 @@ namespace UIForNewMesSystem
         /// <returns></returns>
         private bool validatePartFields()
         {
-            if (!validatePartCatalogId(txtCatalogID.Text))
+            if (!validateSaveCatalogId(txtCatalogID.Text))
+            {
+                displayPartMessage("Catalog ID should only contain digits.", Brushes.Red, Visibility.Visible); 
                 return false;
+            }
             if (!validatePartDescription(txtItemDescription.Text))
+            {
+                displayPartMessage("Please enter a description with at least 25 characters."
+                , Brushes.Red, Visibility.Visible);
                 return false;
-            if (!validatePartDp(dpPartDateOfCreation.SelectedDate))
+            }
+            if (!validateCreationDate(dpPartDateOfCreation.SelectedDate))
+            {
+                displayPartMessage("Please fill the date of creation field."
+                , Brushes.Red, Visibility.Visible);
                 return false;
-            if (!validatePartCreatorId(txtPartCreatorID.Text))
+            }
+            if (!validateCreatorID(txtPartCreatorID.Text))
                 return false;
-            if (!validatePartLanguageCode(txtPartLanguageCode.Text))
+            if (!validateLanguageCode(txtPartLanguageCode.Text))
                 return false;
             return true;
         }
@@ -511,7 +591,7 @@ namespace UIForNewMesSystem
         /// partCatalogIdValidation - Validates the catalog ID field
         /// </summary>
         /// <returns></returns>
-        private bool validatePartCatalogId(string catalogID)
+        private bool validateSaveCatalogId(string catalogID)
         {
             if (string.IsNullOrEmpty(catalogID) ||
                 (!catalogID.All(char.IsDigit)))
@@ -527,93 +607,12 @@ namespace UIForNewMesSystem
         /// <returns></returns>
         private bool validatePartDescription(string description)
         {
-            if (description.Length < 50)//minimal description
+            if (description.Length < 25)//minimal description
                 return false;
             else
                 return true;
         }
 
-        /// <summary>
-        /// partDpValidation - Validates the part datePicker field
-        /// </summary>
-        /// <returns></returns>
-        private bool validatePartDp(DateTime? selectedDate)
-        {
-            if (!selectedDate.HasValue)
-                return false;
-            else
-                return true;
-        }
-
-        /// <summary>
-        /// partCreatorIdValidation - Validates the creator field
-        /// </summary>
-        /// <returns></returns>
-        private bool validatePartCreatorId(string creatorID)
-        {
-            if (string.IsNullOrEmpty(creatorID) || (creatorID.Length != 9) || !creatorID.All(char.IsDigit))
-                return false;
-            else
-                return true;
-        }
-
-        /// <summary>
-        /// partLanguageCodeValidation - Validates the language code field
-        /// </summary>
-        /// <returns></returns>
-        private bool validatePartLanguageCode(string languageCode)
-        {
-            if (string.IsNullOrEmpty(languageCode) ||
-                (!languageCode.All(char.IsDigit)))
-                return false;
-            else
-                return true;
-        }
-
-
-        /// <summary>
-        /// getPartsInfo_Click - Gets the Part information from the DB and show it in the textBlock
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void getPartsInfo_Click(object sender, RoutedEventArgs e)
-        {
-            txtPartSaveWarning.Visibility = Visibility.Collapsed;
-            txtPartMessage.Text = PartEntity.fetchPartsInfo();
-            displayPartMessage("Information updated", Brushes.LightGreen, Visibility.Visible);
-        }
-
-
-        /// <summary>
-        /// deletePart_Click - Deletes the current part 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void deletePart_Click(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrEmpty(txtCatalogID.Text))
-            {
-                displayPartMessage("Please type a valid catalog ID to delete", Brushes.Red, Visibility.Visible);
-                return;
-            }
-            if (PartEntity.partExists(txtCatalogID.Text))
-            {
-                if (PartEntity.deletePart(txtCatalogID.Text))
-                {
-                    displayPartMessage($"Part {txtCatalogID.Text} successfully deleted,", Brushes.LightGreen, Visibility.Visible);
-                    m_logsInstance.Log($"Debug - part {txtCatalogID.Text} successfully deleted");
-                    if (PartEntity.deletePart(txtCatalogID.Text))
-                    {
-                        m_logsInstance.Log($"Debug - deleted all orders related to {txtCatalogID.Text} successfully.");
-                    }
-                }
-            }
-            else
-            {
-                displayPartMessage($"Part {txtCatalogID.Text} not found in the DataBase", Brushes.Red, Visibility.Visible);
-                m_logsInstance.Log($"Debug - Part {txtCatalogID.Text} not found in the DataBase");
-            }
-        }
 
         #endregion Part
 
@@ -627,11 +626,11 @@ namespace UIForNewMesSystem
         private void saveWorkOrder_Click(object sender, RoutedEventArgs e)
         {
             txtWorkOrderSaveWarning.Visibility = Visibility.Collapsed;
-            if (areAllWorkOrderFieldsValid())
+            if (validateAndNotifyOrderFields())
             {
                 if (!WorkOrder.orderExists(txtOrderNumber.Text))
                 {
-                    if (!validateMachinePartOrder())
+                    if (!validateMachinePartExist())
                     {
                         displayWorkOrderMessage($"Machine or part not exist.", Brushes.Red, Visibility.Visible);
                         return;
@@ -649,7 +648,79 @@ namespace UIForNewMesSystem
             }
         }
 
-        private bool validateMachinePartOrder()
+        /// <summary>
+        /// deleteWorkOrder_Click - Deletes the current workOrder 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void deleteWorkOrder_Click(object sender, RoutedEventArgs e)
+        {
+            if (!validateOrderNumber(txtOrderNumber.Text))
+            {
+                displayWorkOrderMessage("Please type a valid order number to delete", Brushes.Red, Visibility.Visible);
+                return;
+            }
+            if (!WorkOrderEntity.orderExists(txtOrderNumber.Text))
+            {
+                displayWorkOrderMessage("Order number not found in the Database", Brushes.Red, Visibility.Visible);
+                return;
+            }
+            if (WorkOrderEntity.deleteWorkOrder(txtOrderNumber.Text))
+            {
+                displayWorkOrderMessage($"Order number {txtOrderNumber.Text} deleted successfully", Brushes.LightGreen, Visibility.Visible);
+                m_logsInstance.Log($"Order number {txtOrderNumber.Text} deleted successfully");
+            }
+            else
+                displayWorkOrderMessage($"Could not delete order number {txtOrderNumber.Text}", Brushes.Red, Visibility.Visible);
+        }
+
+        /// <summary>
+        /// updateWorkOrder_Click - Updates the current workOrder
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void updateWorkOrder_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtOrderNumber.Text))
+            {
+                displayWorkOrderMessage("Please type order number", Brushes.Red, Visibility.Visible);
+                return;
+            }
+            if (areAllOrderFieldsEmpty())
+                return;
+            if (!validateAndNotifyUpdateOrderFields())
+                return;
+            try
+            {
+                bool updateSucceeded = WorkOrderEntity.updateWorkOrder(txtOrderNumber.Text, txtWorkOrderCatalogID.Text, textMachineName.Text, txtAmountToProduce.Text, dpDateOfCreationWorkOrder.SelectedDate,
+                    txtOrderIDCreatorID.Text, txtWorkOrderLanguageCode.Text);
+                if (updateSucceeded)
+                    displayWorkOrderMessage($"Order {txtOrderNumber.Text} successfully updated", Brushes.LightGreen, Visibility.Visible);
+                else
+                {
+                    displayWorkOrderMessage($"Could not update order {txtOrderNumber.Text}", Brushes.Red, Visibility.Visible);
+                    m_logsInstance.Log("Debug - " + $"Could not update order {txtOrderNumber.Text}");
+                }
+            }
+            catch (Exception ex)
+            {
+                m_logsInstance.Log("EXCEPTION" + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// getWorkOrdersInfo_Click - Gets and show in the UI the entire DB workOrders table
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void getWorkOrdersInfo_Click(object sender, RoutedEventArgs e)
+        {
+            txtWorkOrderSaveWarning.Visibility = Visibility.Collapsed;
+            txtWorkOrderMessage.Text = WorkOrderEntity.fetchOrdersInfo();
+            displayWorkOrderMessage("Information updated", Brushes.LightGreen, Visibility.Visible);
+        }
+
+        private bool validateMachinePartExist()
         {
             if (!(Machine.machineExists(textMachineName.Text)))
             {
@@ -666,8 +737,6 @@ namespace UIForNewMesSystem
             return true;
         }
 
-
-
         /// <summary>
         /// startSuccessfulWorkOrderProtocol - After all the validations 
         /// </summary>
@@ -677,7 +746,6 @@ namespace UIForNewMesSystem
             m_workOrderSent = newWorkOrder.insertWorkOrderIntoDB();
             if (m_workOrderSent)
             {
-                m_workOrderSent = false;
                 m_logsInstance.Log("Debug" + $"Work order number {txtOrderNumber.Text} successfully sent to the DB");
                 displayWorkOrderMessage("Work order successfully sent to DB", Brushes.LightGreen, Visibility.Visible);
             }
@@ -689,27 +757,49 @@ namespace UIForNewMesSystem
         }
 
         /// <summary>
-        /// The next function returns true if all the fields in work order section
+        /// validateAndNotifyOrderFields - The next function returns true if all the fields in work order section
         /// filled properly, otherwise false
         /// built in a way that one validation will end the function and save time.
+        /// Use only when save pressed and not update
         /// </summary>
         /// <returns></returns>
-        private bool areAllWorkOrderFieldsValid()
+        private bool validateAndNotifyOrderFields()
         {
             if (!validateOrderNumber(txtOrderNumber.Text))
+            {
+                displayWorkOrderMessage("Please enter a valid numeric order number", Brushes.Red, Visibility.Visible);
                 return false;
+            }
             if (!validateOrderCatalogID(txtWorkOrderCatalogID.Text))
+            {
+                displayWorkOrderMessage("Please provide a valid part catalog ID.", Brushes.Red, Visibility.Visible);
                 return false;
+            }
             if (!validateOrderMachineName(textMachineName.Text))
+            {
+                displayWorkOrderMessage("Please enter a valid machine name (maximum 50 characters).", Brushes.Red, Visibility.Visible);
                 return false;
+            }
             if (!validateOrderQuantity(txtAmountToProduce.Text))
+            {
+                displayWorkOrderMessage("Please enter a valid numeric quantity", Brushes.Red, Visibility.Visible);
                 return false;
-            if (!validateOrderDPWork(dpDateOfCreationWorkOrder.SelectedDate))
+            }
+            if (!validateCreationDate(dpDateOfCreationWorkOrder.SelectedDate))
+            {
+                displayWorkOrderMessage("Please enter a valid creation date.", Brushes.Red, Visibility.Visible);
                 return false;
-            if (!validateOrderCreatorID(txtOrderIDCreatorID.Text))
+            }
+            if (!validateCreatorID(txtOrderIDCreatorID.Text))
+            {
+                displayWorkOrderMessage("Please enter a valid numerical creator ID(9 digits)", Brushes.Red, Visibility.Visible);
                 return false;
-            if (!validateOrderLanguageCode(txtWorkOrderLanguageCode.Text))
+            }
+            if (!validateLanguageCode(txtWorkOrderLanguageCode.Text)) 
+            {
+                displayWorkOrderMessage("Please enter a valid numerical language code.", Brushes.Red, Visibility.Visible);
                 return false;
+            }
             return true;
         }
 
@@ -756,6 +846,19 @@ namespace UIForNewMesSystem
         }
 
         /// <summary>
+        /// validateUpdateOrderQuantity -  Validates the quantity field in case of update
+        /// </summary>
+        /// <returns></returns>
+        private bool validateUpdateOrderQuantity(string quantity)
+        {
+            if (!string.IsNullOrEmpty(quantity) &&
+                (!quantity.All(char.IsDigit)))
+                return false;
+            else
+                return true;
+        }
+
+        /// <summary>
         /// machineNameOrderValidation - Validates the machine name field
         /// </summary>
         /// <returns></returns>
@@ -767,123 +870,58 @@ namespace UIForNewMesSystem
                 return true;
         }
 
-        /// <summary>
-        /// dpWorkOrderValidation - Validates datepicker field
-        /// </summary>
-        /// <returns></returns>
-        private bool validateOrderDPWork(DateTime? creationDate)
+        private bool validateAndNotifyUpdateOrderFields()
         {
-            if ((!creationDate.HasValue))
-                return false;
-            else
-                return true;
-        }
-
-        /// <summary>
-        /// creatorIDWorkOrderValidation -  Validates the creator ID field
-        /// </summary>
-        /// <returns></returns>
-        private bool validateOrderCreatorID(string creatorID)
-        {
-            if ((creatorID.Length != 9) ||
-                (!creatorID.All(char.IsDigit)))
-                return false;
-            else
-                return true;
-        }
-
-        /// <summary>
-        /// languageCodeWorkOrderValidation - Validates the language code field
-        /// </summary>
-        /// <returns></returns>
-        private bool validateOrderLanguageCode(string languageCode)
-        {
-            if (string.IsNullOrEmpty(languageCode) ||
-                (!languageCode.All(char.IsDigit)))
-                return false;
-            else
-                return true;
-        }
-
-        /// <summary>
-        /// getWorkOrdersInfo_Click - Gets and show in the UI the entire DB workOrders table
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void getWorkOrdersInfo_Click(object sender, RoutedEventArgs e)
-        {
-            txtWorkOrderSaveWarning.Visibility = Visibility.Collapsed;
-            txtWorkOrderMessage.Text = WorkOrderEntity.fetchOrdersInfo();
-            displayWorkOrderMessage("Information updated", Brushes.LightGreen, Visibility.Visible);
-        }
-
-        /// <summary>
-        /// deleteWorkOrder_Click - Deletes the current workOrder 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void deleteWorkOrder_Click(object sender, RoutedEventArgs e)
-        {
-            if (!validateOrderNumber(txtOrderNumber.Text))
-            {
-                displayWorkOrderMessage("Please type a valid order number to delete", Brushes.Red, Visibility.Visible);
-                return;
-            }
-            if (!WorkOrderEntity.orderExists(txtOrderNumber.Text))
-            {
-                displayWorkOrderMessage("Order number not found in the Database", Brushes.Red, Visibility.Visible);
-                return;
-            }
-            if (WorkOrderEntity.deleteWorkOrderByOrderNumber(txtOrderNumber.Text))
-            {
-                displayWorkOrderMessage($"Order number {txtOrderNumber.Text} deleted successfully", Brushes.LightGreen, Visibility.Visible);
-                m_logsInstance.Log($"Order number {txtOrderNumber.Text} deleted successfully");
-            }
-            else
-                displayWorkOrderMessage($"Could not delete order number {txtOrderNumber.Text}", Brushes.Red, Visibility.Visible);
-        }
-
-        /// <summary>
-        /// updateWorkOrder_Click - Updates the current workOrder
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void updateWorkOrder_Click(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrEmpty(txtOrderNumber.Text))
-            {
-                displayWorkOrderMessage("Please type order number", Brushes.Red, Visibility.Visible);
-                return;
-            }
-            if (areAllOrderFieldsEmpty())
-                return;
-            if (!validateOrderCreatorUpdate())
-                return;
-            try
-            {
-                bool updateSucceeded = WorkOrderEntity.updateWorkOrder(txtOrderNumber.Text, txtWorkOrderCatalogID.Text, textMachineName.Text, txtAmountToProduce.Text, dpDateOfCreationWorkOrder.SelectedDate,
-                    txtOrderIDCreatorID.Text, txtWorkOrderLanguageCode.Text);
-                if (updateSucceeded)
-                    displayWorkOrderMessage($"Order {txtOrderNumber.Text} successfully updated", Brushes.LightGreen, Visibility.Visible);
-                else
-                {
-                    displayWorkOrderMessage($"Could not update order {txtOrderNumber.Text}", Brushes.Red, Visibility.Visible);
-                    m_logsInstance.Log("Debug - " + $"Could not update order {txtOrderNumber.Text}");
-                }
-            }
-            catch (Exception ex)
-            {
-                m_logsInstance.Log("EXCEPTION" + ex.Message);
-            }
-        }
-
-        private bool validateOrderCreatorUpdate()
-        {
-            if (!string.IsNullOrEmpty(txtOrderIDCreatorID.Text) && ((txtOrderIDCreatorID.Text.Length != 9) || !txtOrderIDCreatorID.Text.All(char.IsDigit)))
+            if (!validateUpdateCreator(txtOrderIDCreatorID.Text)) 
             {
                 displayWorkOrderMessage($"Creator ID should be a valid ID(9 digits)"
-                    , Brushes.Red, Visibility.Visible);
+    , Brushes.Red, Visibility.Visible);
                 return false;
+            }
+            if(!validateUpdateLanguageCode(txtWorkOrderLanguageCode.Text)) 
+            {
+                displayWorkOrderMessage("The language code should only contain digits."
+    , Brushes.Red, Visibility.Visible);
+                return false;
+            }
+            if (!validateUpdateOrderQuantity(txtAmountToProduce.Text))
+            {
+                displayWorkOrderMessage("Please enter a valid numeric quantity to produce."
+    , Brushes.Red, Visibility.Visible);
+                return false;
+            }
+            if(!validateUpdateMachineName(textMachineName.Text))
+            {
+                displayWorkOrderMessage("Machine not exist in the Datebase."
+    , Brushes.Red, Visibility.Visible);
+                return false;
+            }
+            if (!validateUpdateCatalogID(txtWorkOrderCatalogID.Text))
+            {
+                displayWorkOrderMessage("Part catalog ID not exist in the Datebase."
+, Brushes.Red, Visibility.Visible);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool validateUpdateMachineName(string machineName)
+        {
+            if(!string.IsNullOrEmpty(machineName))
+            {
+                if(!Machine.machineExists(machineName))
+                    return false;
+            }
+            return true;
+        }
+        
+        private bool validateUpdateCatalogID(string catalogID)
+        {
+            if(!string.IsNullOrEmpty(catalogID))
+            {
+                if(!Part.partExists(catalogID))
+                    return false;
             }
             return true;
         }
