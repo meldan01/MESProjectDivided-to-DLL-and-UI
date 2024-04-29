@@ -473,9 +473,9 @@ namespace UIForNewMesSystem
         /// <returns></returns>
         private bool validatePartUpdateFields()
         {
-            if (string.IsNullOrEmpty(txtCatalogID.Text))
+            if (string.IsNullOrEmpty(txtCatalogID.Text) || txtCatalogID.Text.Length > 50)
             {
-                displayPartMessage("Please enter a valid numeric catalog ID."
+                displayPartMessage("Please enter a valid numeric catalog ID(max 50 characters)."
                 , Brushes.Red, Visibility.Visible);
                 return false;
             }
@@ -497,13 +497,13 @@ namespace UIForNewMesSystem
                 }
                 if (!validateUpdateCreator(txtPartCreatorID.Text))
                 {
-                    displayPartMessage($"Creator ID should be a valid ID(9 digits)"
+                    displayPartMessage($"Please enter a valid ID (9 digits)"
                     , Brushes.Red, Visibility.Visible);
                     return false;
                 }
                 if (!validateUpdateLanguageCode(txtPartLanguageCode.Text))
                 {
-                    displayPartMessage("The language code should only contain digits."
+                    displayPartMessage("Please enter a valid language code(max 5 characters)."
                     , Brushes.Red, Visibility.Visible);
                     return false;
                 }
@@ -652,7 +652,7 @@ namespace UIForNewMesSystem
         private bool validateSaveCatalogId(string catalogID)
         {
             if (string.IsNullOrEmpty(catalogID) ||
-                (!catalogID.All(char.IsDigit)))
+                (!catalogID.All(char.IsDigit)) || catalogID.Length > 50)
 
                 return false;
             else
@@ -834,12 +834,12 @@ namespace UIForNewMesSystem
         {
             if (!validateOrderNumber(txtOrderNumber.Text))
             {
-                displayWorkOrderMessage("Please enter a valid numeric order number", Brushes.Red, Visibility.Visible);
+                displayWorkOrderMessage("Please enter a valid numeric order number(max 50 digits).", Brushes.Red, Visibility.Visible);
                 return false;
             }
             if (!validateOrderCatalogID(txtWorkOrderCatalogID.Text))
             {
-                displayWorkOrderMessage("Please provide a valid part catalog ID.", Brushes.Red, Visibility.Visible);
+                displayWorkOrderMessage("Please enter a valid numeric catalog ID(max 50 digits).", Brushes.Red, Visibility.Visible);
                 return false;
             }
             if (!validateOrderMachineName(textMachineName.Text))
@@ -849,7 +849,7 @@ namespace UIForNewMesSystem
             }
             if (!validateOrderQuantity(txtAmountToProduce.Text))
             {
-                displayWorkOrderMessage("Please enter a valid numeric quantity", Brushes.Red, Visibility.Visible);
+                displayWorkOrderMessage("Please enter a valid numeric quantity(maximum 50 digits)", Brushes.Red, Visibility.Visible);
                 return false;
             }
             if (!validateCreationDate(dpDateOfCreationWorkOrder.SelectedDate))
@@ -864,7 +864,7 @@ namespace UIForNewMesSystem
             }
             if (!validateLanguageCode(txtWorkOrderLanguageCode.Text))
             {
-                displayWorkOrderMessage("Please enter a valid numerical language code.", Brushes.Red, Visibility.Visible);
+                displayWorkOrderMessage("Please enter a valid numerical language code(max 5 digits).", Brushes.Red, Visibility.Visible);
                 return false;
             }
             return true;
@@ -877,11 +877,10 @@ namespace UIForNewMesSystem
         private bool validateOrderNumber(string orderNumber)
         {
             if (string.IsNullOrEmpty(orderNumber) ||
-                (!orderNumber.All(char.IsDigit)))
+                (!orderNumber.All(char.IsDigit)) || orderNumber.Length > 50)
             {
                 return false;
             }
-
             else
                 return true;
         }
@@ -893,7 +892,7 @@ namespace UIForNewMesSystem
         private bool validateOrderCatalogID(string catalogID)
         {
             if (string.IsNullOrEmpty(catalogID) ||
-                (!catalogID.All(char.IsDigit)))
+                (!catalogID.All(char.IsDigit)) || catalogID.Length > 50)
                 return false;
             else
                 return true;
@@ -906,7 +905,7 @@ namespace UIForNewMesSystem
         private bool validateOrderQuantity(string quantity)
         {
             if (string.IsNullOrEmpty(quantity) ||
-                (!quantity.All(char.IsDigit)))
+                (!quantity.All(char.IsDigit)) || quantity.Length > 50)
                 return false;
             else
                 return true;
@@ -919,7 +918,7 @@ namespace UIForNewMesSystem
         private bool validateUpdateOrderQuantity(string quantity)
         {
             if (!string.IsNullOrEmpty(quantity) &&
-                (!quantity.All(char.IsDigit)))
+                (!quantity.All(char.IsDigit)) || quantity.Length > 50)
                 return false;
             else
                 return true;
@@ -945,36 +944,39 @@ namespace UIForNewMesSystem
         {
             if (!validateUpdateCreator(txtOrderIDCreatorID.Text))
             {
-                displayWorkOrderMessage($"Creator ID should be a valid ID(9 digits)"
+                displayWorkOrderMessage("Please enter a valid numerical creator ID(9 digits)"
     , Brushes.Red, Visibility.Visible);
                 return false;
             }
             if (!validateUpdateLanguageCode(txtWorkOrderLanguageCode.Text))
             {
-                displayWorkOrderMessage("The language code should only contain digits."
+                displayWorkOrderMessage("Please enter a valid numerical language code(max 5 digits)."
     , Brushes.Red, Visibility.Visible);
                 return false;
             }
             if (!validateUpdateOrderQuantity(txtAmountToProduce.Text))
             {
-                displayWorkOrderMessage("Please enter a valid numeric quantity to produce."
+                displayWorkOrderMessage("Please enter a valid numeric quantity(max 50 digits)"
     , Brushes.Red, Visibility.Visible);
                 return false;
             }
             if (!validateUpdateMachineName(textMachineName.Text))
             {
-                displayWorkOrderMessage("Machine not exist in the Datebase."
+                displayWorkOrderMessage("Please enter a valid machine name(max 50 digits)."
     , Brushes.Red, Visibility.Visible);
                 return false;
             }
             if (!validateUpdateCatalogID(txtWorkOrderCatalogID.Text))
             {
-                displayWorkOrderMessage("Part catalog ID not exist in the Datebase."
+                displayWorkOrderMessage("Please enter a valid catalog ID(max 50 digits)."
     , Brushes.Red, Visibility.Visible);
                 return false;
             }
+            if (!validateMachinePartExist())
+                return false;
             return true;
         }
+
 
         /// <summary>
         /// validateUpdateMachineName - validation to machine name before update
@@ -984,10 +986,7 @@ namespace UIForNewMesSystem
         private bool validateUpdateMachineName(string machineName)
         {
             if (!string.IsNullOrEmpty(machineName))
-            {
-                if (!Machine.machineExists(machineName))
                     return false;
-            }
             return true;
         }
 
@@ -998,11 +997,8 @@ namespace UIForNewMesSystem
         /// <returns></returns>
         private bool validateUpdateCatalogID(string catalogID)
         {
-            if (!string.IsNullOrEmpty(catalogID))
-            {
-                if (!Part.partExists(catalogID))
+            if (!string.IsNullOrEmpty(catalogID)) 
                     return false;
-            }
             return true;
         }
 
