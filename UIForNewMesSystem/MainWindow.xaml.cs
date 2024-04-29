@@ -974,18 +974,7 @@ namespace UIForNewMesSystem
                 return true;
         }
 
-        /// <summary>
-        /// validateUpdateOrderQuantity -  Validates the quantity field in case of update
-        /// </summary>
-        /// <returns></returns>
-        private bool validateUpdateOrderQuantity(string quantity)
-        {
-            if (!string.IsNullOrEmpty(quantity) &&
-                (!quantity.All(char.IsDigit)) || quantity.Length > 50)
-                return false;
-            else
-                return true;
-        }
+      
 
         /// <summary>
         /// machineNameOrderValidation - Validates the machine name field
@@ -1083,7 +1072,18 @@ namespace UIForNewMesSystem
             return false;
         }
 
-
+        /// <summary>
+        /// validateUpdateOrderQuantity -  Validates the quantity field in case of update
+        /// </summary>
+        /// <returns></returns>
+        private bool validateUpdateOrderQuantity(string quantity)
+        {
+            if (!string.IsNullOrEmpty(quantity) &&
+                (!quantity.All(char.IsDigit)) || quantity.Length > 50)
+                return false;
+            else
+                return true;
+        }
         /// <summary>
         /// setWorkOrderMessage - Set messages to the UI
         /// </summary>
