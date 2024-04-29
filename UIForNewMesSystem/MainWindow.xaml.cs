@@ -615,13 +615,13 @@ namespace UIForNewMesSystem
             }
             if (!validateMinPartDescription(txtItemDescription.Text))
             {
-                displayPartMessage("Please enter a valid description(25 characters)."
+                displayPartMessage("Please enter a valid description(minimum 25 characters)."
                 , Brushes.Red, Visibility.Visible);
                 return false;
             }
             if (!validateMaxPartDescription(txtItemDescription.Text))
             {
-                displayPartMessage("Please enter a valid description(254 characters)."
+                displayPartMessage("Please enter a valid description(max 254 characters)."
                 , Brushes.Red, Visibility.Visible);
                 return false;
             }
@@ -960,45 +960,32 @@ namespace UIForNewMesSystem
     , Brushes.Red, Visibility.Visible);
                 return false;
             }
-            if (!validateUpdateMachineName(textMachineName.Text))
-            {
-                displayWorkOrderMessage("Please enter a valid machine name(max 50 digits)."
-    , Brushes.Red, Visibility.Visible);
+            if (!isUpdateMachineExist())
                 return false;
-            }
-            if (!validateUpdateCatalogID(txtWorkOrderCatalogID.Text))
-            {
-                displayWorkOrderMessage("Please enter a valid catalog ID(max 50 digits)."
-    , Brushes.Red, Visibility.Visible);
-                return false;
-            }
-            if (!validateMachinePartExist())
+            if (!isUpdatePartExist())
                 return false;
             return true;
         }
 
-
-        /// <summary>
-        /// validateUpdateMachineName - validation to machine name before update
-        /// </summary>
-        /// <param name="machineName"></param>
-        /// <returns></returns>
-        private bool validateUpdateMachineName(string machineName)
+        private bool isUpdatePartExist()
         {
-            if (!string.IsNullOrEmpty(machineName))
-                    return false;
+            if (!string.IsNullOrEmpty(txtWorkOrderCatalogID.Text) && !Part.partExists(txtWorkOrderCatalogID.Text))
+            {
+                displayWorkOrderMessage($"Part {txtWorkOrderCatalogID.Text} not exist", Brushes.Red, Visibility.Visible);
+                m_logsInstance.Log("Debug" + $" - Machine or Part not exist or order number exist, therefore order {txtOrderNumber.Text}  will not be added to DB");
+                return false;
+            }
             return true;
         }
-
-        /// <summary>
-        /// validateUpdateCatalogID - validations to catalog ID before update
-        /// </summary>
-        /// <param name="catalogID"></param>
-        /// <returns></returns>
-        private bool validateUpdateCatalogID(string catalogID)
+        
+        private bool isUpdateMachineExist()
         {
-            if (!string.IsNullOrEmpty(catalogID)) 
-                    return false;
+            if (!string.IsNullOrEmpty(textMachineName.Text) &&  !(Machine.machineExists(textMachineName.Text)))
+            {
+                displayWorkOrderMessage($"Machine {textMachineName.Text} not exist", Brushes.Red, Visibility.Visible);
+                m_logsInstance.Log("Debug" + $" - Machine or Part not exist or order number exist, therefore order {txtOrderNumber.Text}  will not be added to DB");
+                return false;
+            }
             return true;
         }
 
