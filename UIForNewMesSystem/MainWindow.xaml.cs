@@ -86,6 +86,15 @@ namespace UIForNewMesSystem
             return true;
         }
 
+        public bool validateDBConnection()
+        {
+            if (m_dbConnection == null)
+            {
+                displayWorkOrderMessage("Error - could not establish Database connection", Brushes.Red, Visibility.Visible);
+                return false;
+            }
+            return true;
+        }
 
         #endregion General
 
@@ -93,6 +102,8 @@ namespace UIForNewMesSystem
         private void saveMachine_Click(object sender, RoutedEventArgs e)
         {
             txtMachineSaveWarning.Visibility = Visibility.Collapsed;
+            if (!validateDBConnection())
+                return;
             if (validateMachineFields())
             {
                 if (!WorkEntities.Machine.machineExists(txtMachineName.Text))
@@ -120,6 +131,8 @@ namespace UIForNewMesSystem
         private void getMachinesInfo_Click(object sender, RoutedEventArgs e)
         {
             txtMachineSaveWarning.Visibility = Visibility.Collapsed;
+            if (!validateDBConnection())
+                return;
             txtMachineMessage.Text = WorkEntities.Machine.fetchMachinesInfo();
             displayMachineMessage("Information updated", Brushes.LightGreen, Visibility.Visible);
         }
@@ -131,6 +144,8 @@ namespace UIForNewMesSystem
         /// <param name="e"></param>
         private void updateMachine_Click(object sender, RoutedEventArgs e)
         {
+            if (!validateDBConnection())
+                return;
             if (!validateBeforeUpdate())
                 return;
             if (MachineEntity.updateMachine(txtMachineName.Text, dpDateOfCreation.SelectedDate, txtCreatorID.Text, txtLanguageCode.Text))
@@ -150,6 +165,8 @@ namespace UIForNewMesSystem
         /// <param name="e"></param>
         private void deleteMachine_Click(object sender, RoutedEventArgs e)
         {
+            if (!validateDBConnection())
+                return;
             if (!userDeleteValidation())
                 return;
             if (MachineEntity.deleteMachine(txtMachineName.Text))
@@ -191,6 +208,11 @@ namespace UIForNewMesSystem
             logAndNotifyUser();
         }
 
+        /// <summary>
+        /// idCheck - Checks the id is a valid ID
+        /// </summary>
+        /// <param name="IDNumber"></param>
+        /// <returns></returns>
         public static bool idCheck(string IDNumber)
         {
             int alter = 1;
@@ -217,6 +239,9 @@ namespace UIForNewMesSystem
             return total % 10 == 0;
         }
 
+        /// <summary>
+        /// logAndNotifyUser - notify the user if machine successfully added to DB
+        /// </summary>
         private void logAndNotifyUser()
         {
             if (m_machineSent)
@@ -259,6 +284,10 @@ namespace UIForNewMesSystem
             return true; ;
         }
 
+        /// <summary>
+        /// validateBeforeUpdate - validations to the fields before update
+        /// </summary>
+        /// <returns></returns>
         private bool validateBeforeUpdate()
         {
             if (string.IsNullOrEmpty(txtMachineName.Text))
@@ -301,6 +330,10 @@ namespace UIForNewMesSystem
                 return true;
         }
 
+        /// <summary>
+        /// isMachineFieldsEmpty - Checks if all the machine fields are empty
+        /// </summary>
+        /// <returns></returns>
         private bool isMachineFieldsEmpty()
         {
             return string.IsNullOrEmpty(txtCreatorID.Text) &
@@ -308,6 +341,10 @@ namespace UIForNewMesSystem
              !dpDateOfCreation.SelectedDate.HasValue;
         }
 
+        /// <summary>
+        /// userDeleteValidation - validation before delete
+        /// </summary>
+        /// <returns></returns>
         private bool userDeleteValidation()
         {
             if (string.IsNullOrEmpty(txtMachineName.Text))
@@ -427,7 +464,9 @@ namespace UIForNewMesSystem
             }
         }
 
-
+        /// <summary>
+        /// logAndDisplayPartUpdateSuccess - writes to the logs and to the UI about successful update
+        /// </summary>
         private void logAndDisplayPartUpdateSuccess()
         {
             displayPartMessage($"Part {txtCatalogID.Text} successfully updated."
@@ -479,6 +518,10 @@ namespace UIForNewMesSystem
             return true;
         }
 
+        /// <summary>
+        /// areAllPartFieldsEmpty - returns true if all fields are empty
+        /// </summary>
+        /// <returns></returns>
         private bool areAllPartFieldsEmpty()
         {
             if (
@@ -541,6 +584,9 @@ namespace UIForNewMesSystem
             logAndDisplayPartMessage();
         }
 
+        /// <summary>
+        /// writes to the logs and to UI about successful db insert
+        /// </summary>
         private void logAndDisplayPartMessage()
         {
             if (m_partSent)
@@ -720,6 +766,11 @@ namespace UIForNewMesSystem
             displayWorkOrderMessage("Information updated", Brushes.LightGreen, Visibility.Visible);
         }
 
+        /// <summary>
+        /// validateMachinePartExist - validations that machine and part exist
+        /// used to check before adding work order
+        /// </summary>
+        /// <returns></returns>
         private bool validateMachinePartExist()
         {
             if (!(Machine.machineExists(textMachineName.Text)))
@@ -870,6 +921,10 @@ namespace UIForNewMesSystem
                 return true;
         }
 
+        /// <summary>
+        /// validateAndNotifyUpdateOrderFields - validations before update
+        /// </summary>
+        /// <returns></returns>
         private bool validateAndNotifyUpdateOrderFields()
         {
             if (!validateUpdateCreator(txtOrderIDCreatorID.Text)) 
@@ -899,13 +954,17 @@ namespace UIForNewMesSystem
             if (!validateUpdateCatalogID(txtWorkOrderCatalogID.Text))
             {
                 displayWorkOrderMessage("Part catalog ID not exist in the Datebase."
-, Brushes.Red, Visibility.Visible);
+    , Brushes.Red, Visibility.Visible);
                 return false;
             }
-
             return true;
         }
 
+        /// <summary>
+        /// validateUpdateMachineName - validation to machine name before update
+        /// </summary>
+        /// <param name="machineName"></param>
+        /// <returns></returns>
         private bool validateUpdateMachineName(string machineName)
         {
             if(!string.IsNullOrEmpty(machineName))
@@ -915,7 +974,12 @@ namespace UIForNewMesSystem
             }
             return true;
         }
-        
+
+        /// <summary>
+        /// validateUpdateCatalogID - validations to catalog ID before update
+        /// </summary>
+        /// <param name="catalogID"></param>
+        /// <returns></returns>
         private bool validateUpdateCatalogID(string catalogID)
         {
             if(!string.IsNullOrEmpty(catalogID))
