@@ -58,7 +58,7 @@ namespace UIForNewMesSystem
         private bool validateLanguageCode(string languageCode)
         {
             if (string.IsNullOrEmpty(languageCode) ||
-                (!languageCode.All(char.IsDigit)))
+                (!languageCode.All(char.IsDigit) || languageCode.Length > 5))
                 return false;
             else
                 return true;
@@ -66,7 +66,7 @@ namespace UIForNewMesSystem
 
         private bool validateUpdateLanguageCode(string languageCode)
         {
-            if (!string.IsNullOrEmpty(languageCode) && !languageCode.All(char.IsDigit))
+            if (!string.IsNullOrEmpty(languageCode) && !languageCode.All(char.IsDigit) || languageCode.Length > 5)
                 return false;
             return true;
         }
@@ -90,7 +90,7 @@ namespace UIForNewMesSystem
         {
             if (m_dbConnection == null)
             {
-                displayWorkOrderMessage("Error - could not establish Database connection", Brushes.Red, Visibility.Visible);
+                displayMachineMessage("Error - could not establish Database connection", Brushes.Red, Visibility.Visible);
                 return false;
             }
             return true;
@@ -114,11 +114,6 @@ namespace UIForNewMesSystem
                 {
                     displayMachineMessage("Machine name already exist.", Brushes.Red, Visibility.Visible);
                 }
-            }
-            else
-            {
-                displayMachineMessage("Invalid input detected. Please ensure all fields" +
-                    " are filled correctly to proceed.", Brushes.Red, Visibility.Visible);
             }
         }
 
@@ -231,7 +226,7 @@ namespace UIForNewMesSystem
                     alter = (alter == 1) ? 2 : 1;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 m_logsInstance.Log(($"the id : {IDNumber} checked and found to be false"));
                 m_logsInstance.Log("EXCEPTION" + ex.Message);
@@ -265,15 +260,18 @@ namespace UIForNewMesSystem
         private bool validateMachineFields()
         {
             if (!validateMachineName(txtMachineName.Text))
+            {
+                displayMachineMessage("Please enter a valid machine name (max 50 characters).", Brushes.Red, Visibility.Visible);
                 return false;
+            }
             if (!validateCreatorID(txtCreatorID.Text))
             {
-                displayMachineMessage("Creator ID should be a valid ID(9 digits)", Brushes.Red, Visibility.Visible);
+                displayMachineMessage("Please enter a valid creator ID (9 digits)", Brushes.Red, Visibility.Visible);
                 return false;
             }
             else if (!validateLanguageCode(txtLanguageCode.Text))
             {
-                displayMachineMessage("The language code should only contain digits.", Brushes.Red, Visibility.Visible);
+                displayMachineMessage("Please enter a valid language code (max 5 digits).", Brushes.Red, Visibility.Visible);
                 return false;
             }
             else if (!validateCreationDate(dpDateOfCreation.SelectedDate))
@@ -290,9 +288,9 @@ namespace UIForNewMesSystem
         /// <returns></returns>
         private bool validateBeforeUpdate()
         {
-            if (string.IsNullOrEmpty(txtMachineName.Text))
+            if (string.IsNullOrEmpty(txtMachineName.Text) || txtMachineName.Text.Length > 50)
             {
-                displayMachineMessage($"Please type a valid machine name to update", Brushes.Red, Visibility.Visible);
+                displayMachineMessage("Please enter a valid machine name (max 50 characters).", Brushes.Red, Visibility.Visible);
                 return false;
             }
             if (!WorkEntities.Machine.machineExists(txtMachineName.Text))
@@ -310,9 +308,9 @@ namespace UIForNewMesSystem
                 displayMachineMessage($"Creator ID should be a valid ID(9 digits)", Brushes.Red, Visibility.Visible);
                 return false;
             }
-            if(!validateUpdateLanguageCode(txtLanguageCode.Text))
+            if (!validateUpdateLanguageCode(txtLanguageCode.Text))
             {
-                displayMachineMessage("The language code should only contain digits.", Brushes.Red, Visibility.Visible);
+                displayMachineMessage("Please enter a valid language code (max 5 digits).", Brushes.Red, Visibility.Visible);
                 return false;
             }
             return true;
@@ -324,7 +322,7 @@ namespace UIForNewMesSystem
         /// <returns></returns>
         private bool validateMachineName(string machineName)
         {
-            if (string.IsNullOrEmpty(machineName))
+            if (string.IsNullOrEmpty(machineName) || machineName.Length > 50)
                 return false;
             else
                 return true;
@@ -398,11 +396,6 @@ namespace UIForNewMesSystem
                     displayPartMessage($"Catalog ID number {txtCatalogID.Text} already exist.", Brushes.Red, Visibility.Visible);
                 }
             }
-            else
-            {
-                displayPartMessage("Invalid input detected. Please ensure all fields are filled correctly to proceed."
-                    , Brushes.Red, Visibility.Visible);
-            }
         }
 
         /// <summary>
@@ -442,7 +435,7 @@ namespace UIForNewMesSystem
         {
             if (string.IsNullOrEmpty(txtCatalogID.Text))
             {
-                displayPartMessage("Please type a valid catalog ID to delete", Brushes.Red, Visibility.Visible);
+                displayPartMessage("Please type a valid numeric catalog ID to delete", Brushes.Red, Visibility.Visible);
                 return;
             }
             if (PartEntity.partExists(txtCatalogID.Text))
@@ -482,17 +475,23 @@ namespace UIForNewMesSystem
         {
             if (string.IsNullOrEmpty(txtCatalogID.Text))
             {
-                displayPartMessage($"Please enter catalog ID."
+                displayPartMessage("Please enter a valid numeric catalog ID."
                 , Brushes.Red, Visibility.Visible);
                 return false;
             }
             if (areAllPartFieldsEmpty())
                 return false;
-            if (PartEntity.partExists(txtCatalogID.Text)) 
+            if (PartEntity.partExists(txtCatalogID.Text))
             {
-                if (!descriptionLengthCheck())
+                if (!descriptionMinLengthCheck())
                 {
                     displayPartMessage("Please enter a description with at least 25 characters."
+                    , Brushes.Red, Visibility.Visible);
+                    return false;
+                }
+                if (!descriptionMaxLengthCheck())
+                {
+                    displayPartMessage("Please enter a description with at most 254 characters."
                     , Brushes.Red, Visibility.Visible);
                     return false;
                 }
@@ -551,26 +550,26 @@ namespace UIForNewMesSystem
         }
 
         /// <summary>
-        /// descriptionLengthValidation - makes sure that the user added some proper description
+        /// descriptionLengthValidation - makes sure that the user added some minimal proper description
         /// </summary>
         /// <returns></returns>
-        private bool descriptionLengthCheck()
+        private bool descriptionMinLengthCheck()
         {
             if (!string.IsNullOrEmpty(txtItemDescription.Text))
-            {
                 if (txtItemDescription.Text.Length < 25)
-                {
-                    displayPartMessage("Please enter a description with at least 25 characters."
-                    , Brushes.Red, Visibility.Visible);
                     return false;
-                }
+            return true;
+        }
+
+        /// <summary>
+        /// descriptionMaxLengthValidation - makes sure that the user added some proper description
+        /// </summary>
+        /// <returns></returns>
+        private bool descriptionMaxLengthCheck()
+        {
+            if (!string.IsNullOrEmpty(txtItemDescription.Text))
                 if (txtItemDescription.Text.Length > 254)
-                {
-                    displayPartMessage("Please enter a description with Maximum 254 characters."
-                    , Brushes.Red, Visibility.Visible);
                     return false;
-                }
-            }
             return true;
         }
 
@@ -611,12 +610,18 @@ namespace UIForNewMesSystem
         {
             if (!validateSaveCatalogId(txtCatalogID.Text))
             {
-                displayPartMessage("Catalog ID should only contain digits.", Brushes.Red, Visibility.Visible); 
+                displayPartMessage("Please enter a valid numeric catalog ID(max 50 characters).", Brushes.Red, Visibility.Visible);
                 return false;
             }
-            if (!validatePartDescription(txtItemDescription.Text))
+            if (!validateMinPartDescription(txtItemDescription.Text))
             {
-                displayPartMessage("Please enter a description with at least 25 characters."
+                displayPartMessage("Please enter a valid description(25 characters)."
+                , Brushes.Red, Visibility.Visible);
+                return false;
+            }
+            if (!validateMaxPartDescription(txtItemDescription.Text))
+            {
+                displayPartMessage("Please enter a valid description(254 characters)."
                 , Brushes.Red, Visibility.Visible);
                 return false;
             }
@@ -627,9 +632,16 @@ namespace UIForNewMesSystem
                 return false;
             }
             if (!validateCreatorID(txtPartCreatorID.Text))
+            {
+                displayPartMessage($"Creator ID should be a valid ID(9 digits)", Brushes.Red, Visibility.Visible);
                 return false;
+            }
             if (!validateLanguageCode(txtPartLanguageCode.Text))
+            {
+                displayPartMessage("Please enter a valid language code(max 5 characters).", Brushes.Red, Visibility.Visible);
                 return false;
+            }
+
             return true;
         }
 
@@ -651,9 +663,17 @@ namespace UIForNewMesSystem
         /// partDescriptionValidation - Validates the description field
         /// </summary>
         /// <returns></returns>
-        private bool validatePartDescription(string description)
+        private bool validateMinPartDescription(string description)
         {
-            if (description.Length < 25)//minimal description
+            if (description.Length < 25)
+                return false;
+            else
+                return true;
+        }
+
+        private bool validateMaxPartDescription(string description)
+        {
+            if (description.Length > 254)
                 return false;
             else
                 return true;
@@ -687,10 +707,6 @@ namespace UIForNewMesSystem
                 {
                     displayWorkOrderMessage($"Work order number {txtOrderNumber.Text} already exist.", Brushes.Red, Visibility.Visible);
                 }
-            }
-            else
-            {
-                displayWorkOrderMessage("Invalid input detected. Please ensure all fields are filled correctly to proceed.", Brushes.Red, Visibility.Visible);
             }
         }
 
@@ -729,7 +745,7 @@ namespace UIForNewMesSystem
         {
             if (string.IsNullOrEmpty(txtOrderNumber.Text))
             {
-                displayWorkOrderMessage("Please type order number", Brushes.Red, Visibility.Visible);
+                displayWorkOrderMessage("Please enter a valid numeric order number.", Brushes.Red, Visibility.Visible);
                 return;
             }
             if (areAllOrderFieldsEmpty())
@@ -846,7 +862,7 @@ namespace UIForNewMesSystem
                 displayWorkOrderMessage("Please enter a valid numerical creator ID(9 digits)", Brushes.Red, Visibility.Visible);
                 return false;
             }
-            if (!validateLanguageCode(txtWorkOrderLanguageCode.Text)) 
+            if (!validateLanguageCode(txtWorkOrderLanguageCode.Text))
             {
                 displayWorkOrderMessage("Please enter a valid numerical language code.", Brushes.Red, Visibility.Visible);
                 return false;
@@ -927,13 +943,13 @@ namespace UIForNewMesSystem
         /// <returns></returns>
         private bool validateAndNotifyUpdateOrderFields()
         {
-            if (!validateUpdateCreator(txtOrderIDCreatorID.Text)) 
+            if (!validateUpdateCreator(txtOrderIDCreatorID.Text))
             {
                 displayWorkOrderMessage($"Creator ID should be a valid ID(9 digits)"
     , Brushes.Red, Visibility.Visible);
                 return false;
             }
-            if(!validateUpdateLanguageCode(txtWorkOrderLanguageCode.Text)) 
+            if (!validateUpdateLanguageCode(txtWorkOrderLanguageCode.Text))
             {
                 displayWorkOrderMessage("The language code should only contain digits."
     , Brushes.Red, Visibility.Visible);
@@ -945,7 +961,7 @@ namespace UIForNewMesSystem
     , Brushes.Red, Visibility.Visible);
                 return false;
             }
-            if(!validateUpdateMachineName(textMachineName.Text))
+            if (!validateUpdateMachineName(textMachineName.Text))
             {
                 displayWorkOrderMessage("Machine not exist in the Datebase."
     , Brushes.Red, Visibility.Visible);
@@ -967,9 +983,9 @@ namespace UIForNewMesSystem
         /// <returns></returns>
         private bool validateUpdateMachineName(string machineName)
         {
-            if(!string.IsNullOrEmpty(machineName))
+            if (!string.IsNullOrEmpty(machineName))
             {
-                if(!Machine.machineExists(machineName))
+                if (!Machine.machineExists(machineName))
                     return false;
             }
             return true;
@@ -982,9 +998,9 @@ namespace UIForNewMesSystem
         /// <returns></returns>
         private bool validateUpdateCatalogID(string catalogID)
         {
-            if(!string.IsNullOrEmpty(catalogID))
+            if (!string.IsNullOrEmpty(catalogID))
             {
-                if(!Part.partExists(catalogID))
+                if (!Part.partExists(catalogID))
                     return false;
             }
             return true;
