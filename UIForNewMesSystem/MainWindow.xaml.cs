@@ -40,13 +40,20 @@ namespace UIForNewMesSystem
 
         #region General
 
+        /// <summary>
+        /// startExternalComponents - starts external components such as DB and Logger
+        /// </summary>
         private static void startExternalComponents()
         {
             m_logsInstance = Logger.getInstance();
             m_dbConnection = DBConnectionManager.getInstance();
         }
 
-
+        /// <summary>
+        /// validateCreationDate - validates the general creationDate field
+        /// </summary>
+        /// <param name="creationDate"></param>
+        /// <returns></returns>
         public static bool validateCreationDate(DateTime? creationDate)
         {
             if (creationDate == null || !creationDate.HasValue)
@@ -54,7 +61,11 @@ namespace UIForNewMesSystem
             return true;
         }
 
-
+        /// <summary>
+        /// /// validateLanguageCode - validates the general languageCode field
+        /// </summary>
+        /// <param name="languageCode"></param>
+        /// <returns></returns>
         private bool validateLanguageCode(string languageCode)
         {
             if (string.IsNullOrEmpty(languageCode) ||
@@ -64,6 +75,11 @@ namespace UIForNewMesSystem
                 return true;
         }
 
+        /// <summary>
+        /// validateUpdateLanguageCode - validates the General languageCode field in update
+        /// </summary>
+        /// <param name="languageCode"></param>
+        /// <returns></returns>
         private bool validateUpdateLanguageCode(string languageCode)
         {
             if (!string.IsNullOrEmpty(languageCode) && !languageCode.All(char.IsDigit) || languageCode.Length > 5)
@@ -71,6 +87,11 @@ namespace UIForNewMesSystem
             return true;
         }
 
+        /// <summary>
+        /// validateCreatorID - validates the creator ID field
+        /// </summary>
+        /// <param name="creatorID"></param>
+        /// <returns></returns>
         public static bool validateCreatorID(string creatorID)
         {
             if (string.IsNullOrEmpty(creatorID) || (creatorID.Length != 9) || !creatorID.All(char.IsDigit) || !idCheck(creatorID))
@@ -79,6 +100,11 @@ namespace UIForNewMesSystem
                 return true;
         }
 
+        /// <summary>
+        /// validateUpdateCreator - validates the creator ID field in update
+        /// </summary>
+        /// <param name="creatorID"></param>
+        /// <returns></returns>
         public static bool validateUpdateCreator(string creatorID)
         {
             if (!string.IsNullOrEmpty(creatorID) && (creatorID.Length != 9 || !creatorID.All(char.IsDigit) || !idCheck(creatorID)))
@@ -86,6 +112,10 @@ namespace UIForNewMesSystem
             return true;
         }
 
+        /// <summary>
+        /// validateDBConnection - validates the db connection return false if it's null
+        /// </summary>
+        /// <returns></returns>
         public bool validateDBConnection()
         {
             if (m_dbConnection == null)
@@ -96,9 +126,17 @@ namespace UIForNewMesSystem
             return true;
         }
 
+
         #endregion General
 
         #region Machine
+
+
+        /// <summary>
+        /// saveMachine_Click - Event called when user presses save
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void saveMachine_Click(object sender, RoutedEventArgs e)
         {
             txtMachineSaveWarning.Visibility = Visibility.Collapsed;
@@ -370,6 +408,8 @@ namespace UIForNewMesSystem
                 m_logsInstance.Log($"Debug - No work orders that related to {txtMachineName.Text} deleted.");
             }
         }
+        
+        
         #endregion Machine
 
 
@@ -384,7 +424,8 @@ namespace UIForNewMesSystem
         private void savePart_Click(object sender, RoutedEventArgs e)
         {
             txtPartSaveWarning.Visibility = Visibility.Collapsed;
-
+            if (!validateDBConnection())
+                return;
             if (validatePartFields())
             {
                 if (!WorkEntities.Part.partExists(txtCatalogID.Text))
@@ -406,6 +447,8 @@ namespace UIForNewMesSystem
         /// <param name="e"></param>
         private void updatePart_Click(object sender, RoutedEventArgs e)
         {
+            if (!validateDBConnection())
+                return;
             if (!validatePartUpdateFields())
                 return;
             if (PartEntity.updatePart(txtCatalogID.Text, txtItemDescription.Text, dpPartDateOfCreation.SelectedDate, txtPartCreatorID.Text, txtPartLanguageCode.Text))
@@ -420,6 +463,8 @@ namespace UIForNewMesSystem
         /// <param name="e"></param>
         private void getPartsInfo_Click(object sender, RoutedEventArgs e)
         {
+            if (!validateDBConnection())
+                return;
             txtPartSaveWarning.Visibility = Visibility.Collapsed;
             txtPartMessage.Text = PartEntity.fetchPartsInfo();
             displayPartMessage("Information updated", Brushes.LightGreen, Visibility.Visible);
@@ -433,6 +478,8 @@ namespace UIForNewMesSystem
         /// <param name="e"></param>
         private void deletePart_Click(object sender, RoutedEventArgs e)
         {
+            if (!validateDBConnection())
+                return;
             if (string.IsNullOrEmpty(txtCatalogID.Text))
             {
                 displayPartMessage("Please type a valid numeric catalog ID to delete", Brushes.Red, Visibility.Visible);
@@ -479,6 +526,7 @@ namespace UIForNewMesSystem
                 , Brushes.Red, Visibility.Visible);
                 return false;
             }
+
             if (areAllPartFieldsEmpty())
                 return false;
             if (PartEntity.partExists(txtCatalogID.Text))
@@ -678,9 +726,11 @@ namespace UIForNewMesSystem
             else
                 return true;
         }
-
-
+        
+        
         #endregion Part
+
+
 
         #region WorkOrder
 
@@ -691,6 +741,8 @@ namespace UIForNewMesSystem
         /// <param name="e"></param>
         private void saveWorkOrder_Click(object sender, RoutedEventArgs e)
         {
+            if (!validateDBConnection())
+                return;
             txtWorkOrderSaveWarning.Visibility = Visibility.Collapsed;
             if (validateAndNotifyOrderFields())
             {
@@ -717,6 +769,8 @@ namespace UIForNewMesSystem
         /// <param name="e"></param>
         private void deleteWorkOrder_Click(object sender, RoutedEventArgs e)
         {
+            if (!validateDBConnection())
+                return;
             if (!validateOrderNumber(txtOrderNumber.Text))
             {
                 displayWorkOrderMessage("Please type a valid order number to delete", Brushes.Red, Visibility.Visible);
@@ -743,12 +797,19 @@ namespace UIForNewMesSystem
         /// <param name="e"></param>
         private void updateWorkOrder_Click(object sender, RoutedEventArgs e)
         {
+            if (!validateDBConnection())
+                return;
             if (string.IsNullOrEmpty(txtOrderNumber.Text))
             {
                 displayWorkOrderMessage("Please enter a valid numeric order number.", Brushes.Red, Visibility.Visible);
                 return;
             }
-            if (areAllOrderFieldsEmpty())
+            if (!WorkOrderEntity.orderExists(txtOrderNumber.Text))//not null or empty
+            {
+                displayWorkOrderMessage($"Order {txtOrderNumber.Text} does not exist. Consider saving it instead of updating.", Brushes.Red, Visibility.Visible);
+                return;
+            }
+                if (areAllOrderFieldsEmpty())
                 return;
             if (!validateAndNotifyUpdateOrderFields())
                 return;
@@ -777,6 +838,8 @@ namespace UIForNewMesSystem
         /// <param name="e"></param>
         private void getWorkOrdersInfo_Click(object sender, RoutedEventArgs e)
         {
+            if (!validateDBConnection())
+                return;
             txtWorkOrderSaveWarning.Visibility = Visibility.Collapsed;
             txtWorkOrderMessage.Text = WorkOrderEntity.fetchOrdersInfo();
             displayWorkOrderMessage("Information updated", Brushes.LightGreen, Visibility.Visible);
@@ -967,6 +1030,11 @@ namespace UIForNewMesSystem
             return true;
         }
 
+        /// <summary>
+        /// isUpdatePartExist - implements the logic of part exists when 
+        /// catalog id might be null in update
+        /// </summary>
+        /// <returns></returns>
         private bool isUpdatePartExist()
         {
             if (!string.IsNullOrEmpty(txtWorkOrderCatalogID.Text) && !Part.partExists(txtWorkOrderCatalogID.Text))
@@ -977,7 +1045,13 @@ namespace UIForNewMesSystem
             }
             return true;
         }
-        
+
+
+        /// <summary>
+        /// isUpdateMachineExist - implements the logic of MachineExists when 
+        /// catalog id might be null in update
+        /// </summary>
+        /// <returns></returns>
         private bool isUpdateMachineExist()
         {
             if (!string.IsNullOrEmpty(textMachineName.Text) &&  !(Machine.machineExists(textMachineName.Text)))
@@ -1022,6 +1096,8 @@ namespace UIForNewMesSystem
             txtWorkOrderSaveWarning.Foreground = foreground;
             txtWorkOrderSaveWarning.Visibility = visibility;
         }
+        
+        
         #endregion WorkOrder
     }
 }
