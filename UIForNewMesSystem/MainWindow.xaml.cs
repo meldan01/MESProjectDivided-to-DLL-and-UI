@@ -403,7 +403,7 @@ namespace UIForNewMesSystem
         /// <param name="text"></param>
         private void deleteMachineWorkOrders(string text)
         {
-            if (!MachineEntity.DeleteOrdersByMachineName(txtMachineName.Text))
+            if (!MachineEntity.deleteOrdersByMachineName(txtMachineName.Text))
             {
                 m_logsInstance.Log($"Debug - No work orders that related to {txtMachineName.Text} deleted.");
             }
@@ -882,7 +882,7 @@ namespace UIForNewMesSystem
             else
             {
                 m_logsInstance.Log("Error" + $" - Work order {txtOrderNumber.Text} Could not be created due to unknown Error in the constructor");
-                displayPartMessage($"Error - Work order {txtOrderNumber.Text} could not be added to the DB", Brushes.Red, Visibility.Visible);
+                displayWorkOrderMessage($"Error - Work order {txtOrderNumber.Text} could not be added to the DB", Brushes.Red, Visibility.Visible);
             }
         }
 
